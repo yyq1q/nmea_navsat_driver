@@ -273,17 +273,16 @@ to the appropriate conversion function based on the field index."""
 
 
 def parse_PDGRP(fields):
-    # 例: $PDGRP,14.7,-64.1,-75.4,100.0,282.92694,8.00815,1839,-1*74
+    # $PDGRP, Delta North, Delta East, Delta Down, Distance, Heading, HeadingAccuracy, fixMode
     try:
         return {
-            'field1': float(fields[1]),
-            'field2': float(fields[2]),
-            'field3': float(fields[3]),
-            'field4': float(fields[4]),
-            'field5': float(fields[5]),
-            'field6': float(fields[6]),
-            'field7': int(fields[7]),
-            'field8': int(fields[8].split('*')[0]),  # チェックサム除去
+            'delta_north': float(fields[1]),
+            'delta_east': float(fields[2]),
+            'delta_down': float(fields[3]),
+            'distance': float(fields[4]),
+            'heading': float(fields[5]),
+            'heading_accuracy': float(fields[6]),
+            'fix_mode': int(fields[7].split('*')[0]),  # チェックサム除去
         }
     except Exception:
         return None
@@ -299,12 +298,22 @@ def parse_nmea_sentence(nmea_sentence):
         A dict mapping string field names to values for each field in the NMEA sentence or
         False if the sentence could not be parsed.
     """
-    # Check for a valid nmea sentence
-    nmea_sentence = nmea_sentence.strip()  # Cut possible carriage return or new line of NMEA Sentence
-    
+    nmea_sentence = nmea_sentence.strip()
+    # 先頭が$で始まっているか確認
+    if not nmea_sentence.startswith('$'):
+        return False
+
+    # センテンス種別を抽出
+    main_part = nmea_sentence.split('*')[0]
+    fields = main_part.split(',')
+    if len(fields) < 1:
+        return False
+    sentence_type = fields[0][1:]  # 例: $PDGRP → PDGRP
+
     if sentence_type == 'PDGRP':
         return {'PDGRP': parse_PDGRP(fields)}
-    
+
+    # 既存NMEA文対応
     if not re.match(
             r'(^\$GP|^\$GN|^\$GL|^\$IN).*\*[0-9A-Fa-f]{2}$', nmea_sentence):
         logger.debug(
