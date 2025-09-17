@@ -39,6 +39,7 @@ import rospy
 from sensor_msgs.msg import NavSatFix, NavSatStatus, TimeReference
 from geometry_msgs.msg import TwistStamped, QuaternionStamped
 from tf.transformations import quaternion_from_euler
+from std_msgs.msg import String
 
 from libnmea_navsat_driver.checksum_utils import check_nmea_checksum
 import libnmea_navsat_driver.parser
@@ -147,6 +148,7 @@ class RosNMEADriver(object):
                 NavSatFix.COVARIANCE_TYPE_APPROXIMATED
             ]
         }
+        self.sentence_pub = rospy.Publisher('nmea_sentence', String, queue_size=10)
 
     def add_sentence(self, nmea_string, frame_id, timestamp=None):
         """Public method to provide a new NMEA sentence to the driver.
@@ -346,6 +348,9 @@ class RosNMEADriver(object):
             self.heading_pub.publish(current_heading)
         else:
             return False
+
+        # NMEAセンテンスをpublish
+        self.sentence_pub.publish(String(data=nmea_string))
 
     @staticmethod
     def get_frame_id():
